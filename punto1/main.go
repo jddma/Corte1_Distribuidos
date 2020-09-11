@@ -1,20 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"time"
 )
 
 func main()  {
 
-	var channel chan string
+	channel :=  make(chan string)
 
-	server := NewServer(":6789")
+	server := NewServer(":6789", channel)
 	go server.runServer()
 
-	time.Sleep(2 * time.Second)
+	fmt.Println(<- channel)
 
-	client := NewClient("127.0.0.1:6789")
+	client := NewClient("127.0.0.1:6789", channel)
 	go client.runClient()
 
 	log.Fatal(<- channel)
