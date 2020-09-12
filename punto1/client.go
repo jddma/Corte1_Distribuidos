@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -12,6 +13,22 @@ import (
 type Client struct {
 	addr *string
 	channel chan string
+}
+
+func (c *Client) showStatistics(statistics Statistics)  {
+
+	fmt.Println("*****Palabras unicas*****")
+	for _, word := range statistics.UniqueWordList{
+		fmt.Println("	" + word)
+	}
+
+	fmt.Println("*****Contador de palabras*****")
+	for word, quantity := range statistics.WordsCounter{
+		fmt.Printf("	%q: %d\n", word, quantity)
+	}
+
+	fmt.Printf("* Size: %d\n", statistics.Size)
+
 }
 
 func (c *Client) getFileContent(path string) (string, bool) {
@@ -70,8 +87,17 @@ func (c *Client) runClient()  {
 		ws.WriteMessage(websocket.TextMessage, []byte(fileContent))
 
 		//Obtener la respuesta del servidor
-		_, msg, _ := ws.ReadMessage()
-		fmt.Println("Client - respuesta: " + string(msg))
+		_, response, _ := ws.ReadMessage()
+
+		var statistics Statistics
+		err := json.Unmarshal(response, &statistics)
+
+		if err != nil{
+			log.Println(err)
+		}
+
+		c.showStatistics(statistics)
+
 	}
 
 	ws.Close()

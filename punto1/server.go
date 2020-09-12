@@ -15,8 +15,9 @@ type Server struct {
 	channel chan string
 }
 
-func (s *Server) getData(text string) string {
+func (s *Server) getData(requestBody[]byte) string {
 
+	text := string(requestBody)
 	//Separar cada una de las palabras en un slice
 	words := strings.Split(text, " ")
 	//Crear un map para hacer el contador de palabras donde la clave es la palabra y el valor las veces que se repite
@@ -38,7 +39,7 @@ func (s *Server) getData(text string) string {
 	}
 
 	//Serializar las estadisticas obtenidas en JSON
-	data := NewStatistics(counter, uniqueWordList)
+	data := NewStatistics(counter, uniqueWordList, len(requestBody))
 	decode, _ := json.Marshal(data)
 	statistics := string(decode)
 
@@ -60,16 +61,16 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	for {
 		//Lee el mensaje enviado por el socket
 		_, msg, err := ws.ReadMessage()
-		fmt.Println("Server - mensaje recibido")
 
 		//Manejo de error
 		if err != nil {
 			log.Println(err)
 			break
 		}
+		fmt.Println("Server - mensaje recibido")
 
 		//Envio de la respuesta
-		ws.WriteMessage(websocket.TextMessage, []byte(s.getData(string(msg))))
+		ws.WriteMessage(websocket.TextMessage, []byte(s.getData(msg)))
 	}
 	ws.Close()
 
