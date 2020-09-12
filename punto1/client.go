@@ -31,29 +31,15 @@ func (c *Client) getFileContent(path string) (string, bool) {
 
 func (c *Client) runClient()  {
 
-
-	//Leer la ruta del archivo
-	var filePath string
-	fmt.Print("Client - Digite la ruta del archivo a enviar: ")
-	fmt.Scanf("%s", &filePath)
-
-	//Obtener el contenido del archivo
-	fileContent, error := c.getFileContent(filePath)
-
-	//Manejo del error
-	if error{
-		c.channel <- "Error al leer el archivo"
-	}
-
 	//Preparar la serialización de la URL
 	flag.Parse()
 	log.SetFlags(0)
 
 	u := url.URL{Scheme: "ws", Host: *c.addr, Path: "/"}
-	fmt.Println("Cliente conectandose a " + u.String())
+	fmt.Println("Client -  estableciendo conexión con " + u.String())
 
 	//Establecer la conexión con el servidor
-	s, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 
 	//Manejo de errores
 	if err != nil{
@@ -61,14 +47,34 @@ func (c *Client) runClient()  {
 		return
 	}
 
-	//Envia un mensaje al servidor
-	s.WriteMessage(websocket.TextMessage, []byte(fileContent))
+	for {
 
-	//Obtener la respuesta del servidor
-	_, msg, err := s.ReadMessage()
-	fmt.Println("CLiente - " + string(msg))
+		//Leer la ruta del archivo
+		var filePath string
+		fmt.Print("Client - Digite la ruta del archivo a enviar: ")
+		fmt.Scanf("%s", &filePath)
+		if filePath == ""{
+			break
+		}
 
-	s.Close()
+		//Obtener el contenido del archivo
+		fileContent, error := c.getFileContent(filePath)
+
+		//Mnejo de error
+		if error{
+			fmt.Println("Client - Error leyendo el archivo")
+			continue
+		}
+
+		//Envia un mensaje al servidor
+		ws.WriteMessage(websocket.TextMessage, []byte(fileContent))
+
+		//Obtener la respuesta del servidor
+		_, msg, _ := ws.ReadMessage()
+		fmt.Println("Client - respuesta: " + string(msg))
+	}
+
+	ws.Close()
 	c.channel <- "ready"
 
 }

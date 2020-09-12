@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -56,16 +57,20 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//Lee el mensaje enviado por el socket
-	_, msg, err := ws.ReadMessage()
+	for {
+		//Lee el mensaje enviado por el socket
+		_, msg, err := ws.ReadMessage()
+		fmt.Println("Server - mensaje recibido")
 
-	//Manejo de error
-	if err != nil{
-		log.Println(err)
+		//Manejo de error
+		if err != nil {
+			log.Println(err)
+			break
+		}
+
+		//Envio de la respuesta
+		ws.WriteMessage(websocket.TextMessage, []byte(s.getData(string(msg))))
 	}
-
-	//Envio de la respuesta
-	ws.WriteMessage(websocket.TextMessage, []byte(s.getData(string(msg))))
 	ws.Close()
 
 }

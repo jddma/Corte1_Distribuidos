@@ -17,6 +17,6 @@ func main()  {
 	client := NewClient("127.0.0.1:6789", channel)
 	go client.runClient()
 
-	log.Fatal(<- channel)
+	log.Println(<- channel)
 
 }
