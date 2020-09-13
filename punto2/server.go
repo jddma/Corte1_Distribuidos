@@ -14,19 +14,32 @@ type Server struct {
 	channel chan string
 }
 
-func (s *Server) formatCommand(msg []byte) (string, []string) {
+func (s *Server) formatCommand(msg []byte) (string, string, bool) {
 
-	//Elimina los saltos de linea
-	command := strings.Replace(string(msg), "\n", "", 1)
-	//Separa el comando estre sus espacios
-	commandParts := strings.Split(command, " ")
+	//Elimina los saltos del comando enviado
+	strMsg := strings.Replace(string(msg), "\n", "", 1)
 
-	//Agrupar y separar el comando y sus argumentos
-	for i := 2; i < len(commandParts); i++{
-		commandParts[1] = commandParts[1] + " " + commandParts[i]
+	//Variable para almacenar unicamente el comando
+	command := strMsg
+	//Variable para almacenar las variables del comando
+	var options string
+	//Vaiabe que sirve de bandera para indicar si la entrada es un comando con opciones adicionales
+	useOptions := false
+
+	//Itera entre la entrada enviada por el cliente
+	for i := 0; i < len(strMsg); i++ {
+
+		//En caso de encontrar un espacio separa el comando de sus opciones
+		if strMsg[i] == ' '{
+			letters := []rune(strMsg)
+			command = string(letters[:i])
+			options = string(letters[(i +1):])
+			useOptions = true
+			break
+		}
 	}
 
-	return command, commandParts
+	return command, options, useOptions
 
 }
 
@@ -53,20 +66,20 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Llamar a la función que le da formato al comando
-		command, commandParts := s.formatCommand(msg)
+		command, options, useOptions := s.formatCommand(msg)
 
 		//Definir si el comando se ejecyta con alguna opción
 		var bash *exec.Cmd
-		if len(commandParts) == 1 {
-			bash = exec.Command(command)
+		if useOptions {
+			bash = exec.Command(command, options)
 		}else {
-			bash = exec.Command(commandParts[0], commandParts[1])
+			bash = exec.Command(command)
 		}
 
 		//Atrapa la respuesta del comando
 		out, err := bash.CombinedOutput()
 		if err != nil {
-			log.Fatalf("cmd.Run() failed with %s\n", err)
+			log.Println("cmd.Run() failed with %s\n", err)
 		}
 
 		//Enviar la salida del comando al cliente
