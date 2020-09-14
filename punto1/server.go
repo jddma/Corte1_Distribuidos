@@ -18,6 +18,8 @@ type Server struct {
 func (s *Server) getData(requestBody[]byte) string {
 
 	text := string(requestBody)
+	text = strings.Replace(text, "\n", "", -1)
+
 	//Separar cada una de las palabras en un slice
 	words := strings.Split(text, " ")
 	//Crear un map para hacer el contador de palabras donde la clave es la palabra y el valor las veces que se repite
