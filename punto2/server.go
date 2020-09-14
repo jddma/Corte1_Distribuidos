@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -47,10 +48,12 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	//Instancia la conexión
 	ws, err := s.upgrader.Upgrade(w, r, nil)
+	fmt.Print("Server - Nueva conexión establecida\n>")
 
 	//Manejo de error
 	if err != nil{
 		log.Print(err)
+		fmt.Print("\n>")
 		return
 	}
 
@@ -62,6 +65,7 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		//Menejo del error
 		if err != nil {
 			log.Println(err)
+			fmt.Print("\n>")
 			break
 		}
 
@@ -110,7 +114,9 @@ func NewServer(port string, channel chan string) *Server {
 
 	return &Server{
 		port: port,
-		upgrader: websocket.Upgrader{},
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool { return true },
+		},
 		channel: channel,
 	}
 
