@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -15,10 +16,9 @@ type Server struct {
 	channel chan string
 }
 
-func (s *Server) getData(requestBody[]byte) string {
+func (s *Server) getData(requestBody string) string {
 
-	text := string(requestBody)
-	text = strings.Replace(text, "\n", "", -1)
+	text := strings.Replace(requestBody, "\n", "", -1)
 
 	//Separar cada una de las palabras en un slice
 	words := strings.Split(text, " ")
@@ -51,6 +51,7 @@ func (s *Server) getData(requestBody[]byte) string {
 
 func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 
+	fmt.Println("Server - Nueva conexión establecida con cliente")
 	//Instancia la conexión
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 
@@ -61,18 +62,38 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		//Lee el mensaje enviado por el socket
-		_, msg, err := ws.ReadMessage()
 
-		//Manejo de error
+		//Recibe el numero de fragmentos en los que llegara el contenido
+		_, strNumFragments, err := ws.ReadMessage()
+
+		//Manejo del error
 		if err != nil {
 			log.Println(err)
 			break
 		}
+
+		//Inicia las variables de control
+		numFragments, _ := strconv.Atoi(string(strNumFragments))
+		content := ""
+
+		//Recibe los fragmentos del contenido y los concatena
+		for i := 0; i < numFragments; i++{
+			//Lee el mensaje enviado por el socket
+			_, msg, err := ws.ReadMessage()
+
+			//Manejo de error
+			if err != nil {
+				log.Println(err)
+				break
+			}
+
+			content += string(msg)
+		}
+
 		fmt.Println("Server - mensaje recibido")
 
 		//Envio de la respuesta
-		ws.WriteMessage(websocket.TextMessage, []byte(s.getData(msg)))
+		ws.WriteMessage(websocket.TextMessage, []byte(s.getData(content)))
 	}
 	ws.Close()
 
